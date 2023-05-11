@@ -6,5 +6,8 @@ public
 .idea
 *.sh
 *.md
-
+build
+out
+release
+.pnpm
 src/assets
