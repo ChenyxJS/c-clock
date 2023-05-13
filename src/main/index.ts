@@ -1,14 +1,25 @@
 import { app, shell, BrowserWindow } from "electron";
 import { join } from "path";
+import "./ipcMain";
+import createTray from "./tray";
+import "./windowSize";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
-import icon from "../../resources/icon.png?asset";
+import icon from "../../resources/IconTemplate@2x.png?asset";
+import remote from "@electron/remote/main";
 
-function createWindow(): void {
+const isMac = process.platform === "darwin";
+
+function createWindow() {
     // Create the browser window.
     const mainWindow = new BrowserWindow({
-        width: 900,
-        height: 670,
+        width: 200,
+        height: 90,
         show: false,
+        frame: false,
+        skipTaskbar: false,
+        transparent: true,
+        alwaysOnTop: true,
+        hasShadow: false,
         autoHideMenuBar: true,
         ...(process.platform === "linux" ? { icon } : {}),
         webPreferences: {
@@ -16,6 +27,9 @@ function createWindow(): void {
             sandbox: false,
         },
     });
+
+    // 开发模式自动打开开发者工具
+    // if (is.dev) mainWindow.webContents.openDevTools()
 
     mainWindow.on("ready-to-show", () => {
         mainWindow.show();
@@ -33,39 +47,38 @@ function createWindow(): void {
     } else {
         mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
     }
+    return mainWindow;
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-    // Set app user model id for windows
-    electronApp.setAppUserModelId("com.electron");
+    // 设置APPID
+    electronApp.setAppUserModelId("cyx.clock");
 
-    // Default open or close DevTools by F12 in development
-    // and ignore CommandOrControl + R in production.
-    // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
+    // 调试工具开发模式F12，生产模式com或ctrl + R
     app.on("browser-window-created", (_, window) => {
         optimizer.watchWindowShortcuts(window);
     });
 
-    createWindow();
-
+    // 创建窗口
+    const mainwindow = createWindow();
+    remote.initialize();
+    remote.enable(mainwindow.webContents);
+    // 托盘图标
+    createTray(mainwindow);
+    // 当窗口数为零时点击app创建新的创建窗口
     app.on("activate", function () {
-        // On macOS it's common to re-create a window in the app when the
-        // dock icon is clicked and there are no other windows open.
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
+    // 隐藏 dock 图标
+    app.dock.hide();
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+// app窗口关闭时，mac系统不直接退出
 app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
+    if (!isMac) {
         app.quit();
     }
 });
-
-// In this file you can include the rest of your app"s specific main process
-// code. You can also put them in separate files and require them here.

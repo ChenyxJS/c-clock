@@ -22,6 +22,7 @@ module.exports = {
         "@typescript-eslint/no-empty-function": "off", // 关闭空方法检查
         "@typescript-eslint/no-explicit-any": "off", // 关闭any类型的警告
         "vue/no-v-model-argument": "off",
+        "@typescript-eslint/ban-ts-comment": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "vue/comment-directive": "off",
     },
